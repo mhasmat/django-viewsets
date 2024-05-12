@@ -1,10 +1,12 @@
 from django.contrib.auth import authenticate
+from django.db.models import Subquery
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 
 from rest_framework import status
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
+from rest_framework.filters import SearchFilter
 # (GET - ListAPIView) Listar todos los elementos en la entidad:
 # (POST - CreateAPIView) Inserta elementos en la DB
 # (GET - RetrieveAPIView) Devuelve un solo elemento de la entidad.
@@ -25,6 +27,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.views import APIView
+from rest_framework.authentication import TokenAuthentication
 
 # NOTE: Importamos este decorador para poder customizar los 
 # parámetros y responses en Swagger, para aquellas
@@ -323,3 +326,82 @@ class LoginUserAPIView(APIView):
             data=user_login_serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+# WISHLIST API VIEWS ()
+"""
+- WishListAPIView (GET - POST)
+- GetWishListAPIView (GET)
+- PostWishListAPIView (POST)
+- UpdateWishListAPIView (UPDATE)
+- DeleteWishListAPIView (DELETE)
+"""
+class WishListAPIView(ListCreateAPIView):
+    '''
+    `[METODO GET-POST]`
+    Esta vista de API nos devuelve una lista de todos los wishlists 
+    en la base de datos.
+    Tambien nos permite hacer un insert en la base de datos.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
+
+class GetWishListAPIView(ListAPIView):
+    __doc__ = f'''{mensaje_headder}
+    `[METODO GET]`
+    Esta vista de API nos devuelve una lista de todos los comics presentes 
+    en la base de datos.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+
+class PostWishListAPIView(CreateAPIView):
+    __doc__ = f'''{mensaje_headder}
+    `[METODO POST]`
+    Esta vista de API nos permite hacer un insert en la base de datos.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
+    permission_classes = [IsAuthenticated & IsAdminUser]
+    
+    
+class UpdateWishListAPIView(UpdateAPIView):
+    __doc__ = f'''{mensaje_headder}
+    `[METODO PUT-PATCH]`
+    Esta vista de API nos permite actualizar un registro,
+    o simplemente visualizarlo.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
+    permission_classes = [IsAuthenticated | IsAdminUser]
+
+
+class DeleteWishListAPIView(DestroyAPIView):
+    __doc__ = f'''{mensaje_headder}
+    `[METODO DELETE]`
+    Esta vista de API nos devuelve una lista de todos los comics presentes 
+    en la base de datos.
+    '''
+    queryset = WishList.objects.all()
+    serializer_class = WishListSerializer
+    permission_classes = [IsAdminUser]
+
+# ---------------------------------------------
+
+class ComicUserAPIView(ListAPIView):
+    queryset = Comic.objects.all()
+    serializer_class = ComicSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = (SearchFilter,)
+
+    search_fields = ('title', 'description')
+
+    def get_queryset(self, *args, **kwargs):
+        comics = WishList.objects.filter(
+            user__username=self.kwargs.get('username'),
+            favorite=True,
+            cart=True
+        ).values('comic')
+        return self.queryset.filter(id__in=Subquery(comics)).order_by('title')

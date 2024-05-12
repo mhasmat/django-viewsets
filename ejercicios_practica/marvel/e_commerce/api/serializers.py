@@ -1,34 +1,37 @@
+# Primero importamos los modelos que queremos serializar:
+from e_commerce.models import Comic, WishList
 from django.contrib.auth.models import User
+
+# Luego importamos todos los serializadores de django rest framework.
+from rest_framework import serializers
+from rest_framework.authtoken.models import Token
 
 # Importamos un validador de password que ofrece Django.
 from django.contrib.auth import password_validation
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 
-# Luego importamos todos los serializadores de django rest framework.
-from rest_framework import serializers
-from rest_framework.authtoken.models import Token
-
-# Primero importamos los modelos que queremos serializar:
-from e_commerce.models import Comic, WishList
-
 
 class ComicSerializer(serializers.ModelSerializer):
     # new_field =  serializers.SerializerMethodField()
     
-    class Meta:
-        model = Comic
-        fields = ('marvel_id','title', 'description', 'price', 'stock_qty', 'picture')
-        # fields = ('marvel_id', 'title', 'algo')
-
     # def get_new_field(self, obj):
     #     return {'hola':10}
+
+    class Meta:
+        model = Comic
+        fields = '__all__'
+        # fields = ('marvel_id','title', 'description', 'price', 'stock_qty', 'picture')
+        # fields = ('marvel_id', 'title', 'new_field')
+        read_only_fields = ('id',)
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        # fields = '__all__'
         exclude = ('password',)
+        
 
 
 class UserLoginSerializer(serializers.Serializer):
@@ -38,83 +41,74 @@ class UserLoginSerializer(serializers.Serializer):
         fields = ('username', 'password')
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        # fields = '__all__'
-        exclude = ('groups', 'user_permissions')
-        read_only_fields = ('id', 'last_login', 'date_joined')
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         # fields = '__all__'
+#         exclude = ('groups', 'user_permissions')
+#         read_only_fields = ('id', 'last_login', 'date_joined')
 
-    # Validación a nivel de campo.
-    def validate_password(self, value):
-        print('Se ejecutó 1ro la validación a nivel de campo.')
-        # Utilizo la validación de password ofrecida por Django, en
-        # caso de no pasar, genera una excepción.
-        try:
-            password_validation.validate_password(value)
-            return value
-        except DjangoValidationError as e:
-            raise serializers.ValidationError({'messages': e})
+#     # Validación a nivel de campo.
+#     def validate_password(self, value):
+#         print('Se ejecutó 1ro la validación a nivel de campo.')
+#         # Utilizo la validación de password ofrecida por Django, en
+#         # caso de no pasar, genera una excepción.
+#         try:
+#             password_validation.validate_password(value)
+#             return value
+#         except DjangoValidationError as e:
+#             raise serializers.ValidationError({'messages': e})
 
-    # Validación a nivel de objecto/instancia.
-    def validate(self, attrs):
-        print('Se ejecutó 2do la validación a nivel de objeto/instancia.')
-        # Hasheo la password.
-        attrs['password'] = make_password(
-            password=attrs.get('password')
-        )
-        return attrs
+#     # Validación a nivel de objecto/instancia.
+#     def validate(self, attrs):
+#         print('Se ejecutó 2do la validación a nivel de objeto/instancia.')
+#         # Hasheo la password.
+#         attrs['password'] = make_password(
+#             password=attrs.get('password')
+#         )
+#         return attrs
 
-    def create(self, validated_data):
-        '''
-        Método que permite administrar y manejar el tema
-        de la creación de una instancia cuando se realiza
-        un 'POST'.
-        '''
-        print('Se crea el objeto/instancia')
-        return super(UserSerializer, self).create(validated_data)
+#     def create(self, validated_data):
+#         '''
+#         Método que permite administrar y manejar el tema
+#         de la creación de una instancia cuando se realiza
+#         un 'POST'.
+#         '''
+#         print('Se crea el objeto/instancia')
+#         return super(UserSerializer, self).create(validated_data)
 
-    def update(self, instance, validated_data):
-        '''
-        Método que permite administrar y manejar el tema
-        de la actualización de una instancia cuando se realiza
-        un 'PUT/PATCH'.
-        '''
-        print('Se actualiza el objeto/instancia')
-        return super(UserSerializer, self).update(instance, validated_data)
+#     def update(self, instance, validated_data):
+#         '''
+#         Método que permite administrar y manejar el tema
+#         de la actualización de una instancia cuando se realiza
+#         un 'PUT/PATCH'.
+#         '''
+#         print('Se actualiza el objeto/instancia')
+#         return super(UserSerializer, self).update(instance, validated_data)
 
-    # NOTE: Descomentar este método y observar que sucede con los métodos
-    # 'create()' y 'update()' cuando se realiza un POST o PUT/PATCH.
-    # def save(self):
-    #     '''
-    #     Método que permite administrar la persistencia
-    #     al crearse o actualizarse uno o varios objetos.
-    #     '''
-    #     print('Entró al método ".save()".')
-    #     # super(UserSerializer, self).save()
+#     # NOTE: Descomentar este método y observar que sucede con los métodos
+#     # 'create()' y 'update()' cuando se realiza un POST o PUT/PATCH.
+#     def save(self):
+#         '''
+#         Método que permite administrar la persistencia
+#         al crearse o actualizarse uno o varios objetos.
+#         '''
+#         print('Entró al método ".save()".')
+#         super(UserSerializer, self).save()
 
-    def to_representation(self, instance):
-        '''
-        Método que permite personalizar
-        los campos que deseo que se muestren al
-        retornar una instancia o varias de ellas.
-        '''
-        data = super(UserSerializer, self).to_representation(instance)
+#     def to_representation(self, instance):
+#         '''
+#         Método que permite personalizar
+#         los campos que deseo que se muestren al
+#         retornar una instancia o varias de ellas.
+#         '''
+#         data = super(UserSerializer, self).to_representation(instance)
         
-        # NOTE: Descomentar, realizar una petición GET
-        # y observar que sucede.
-        data.pop('password')
-        data.pop('is_active')
-        return data
-
-
-class TokenSerializer(serializers.ModelSerializer):
-    user = UserSerializer(many=False, read_only=True)
-    token = serializers.CharField(source='key', read_only=True)
-
-    class Meta:
-        model = Token
-        fields = ('user', 'token')
+#         # NOTE: Descomentar, realizar una petición GET
+#         # y observar que sucede.
+#         data.pop('password')
+#         data.pop('is_active')
+#         return data
         
 
 class UpdatePasswordUserSerializer(serializers.ModelSerializer):
@@ -215,24 +209,22 @@ class UpdatePasswordUserSerializer(serializers.ModelSerializer):
         return data
 
 
+class TokenSerializer(serializers.ModelSerializer):
+    user = UserSerializer(many=False, read_only=True)
+    token = serializers.CharField(source='key', read_only=True)
+
+    class Meta:
+        model = Token
+        fields = ('user', 'token')
+
 # TODO: Realizar el serializador para el modelo de WishList
 class WishListSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['user'] = UserSerializer(many=False)
-        data['comic'] = ComicSerializer(many=False)
-        return data
-
+        self.fields['user'] = UserSerializer()
+        self.fields['comic'] = ComicSerializer()
+        return super().to_representation(instance)
+    
     class Meta:
         model = WishList
-        fields = (
-            'id',
-            'user',
-            'comic',
-            'favorite',
-            'cart',
-            'wished_qty',
-            'bought_qty'
-        )
-        read_only_fields = ('id',)
+        fields= ("__all__")

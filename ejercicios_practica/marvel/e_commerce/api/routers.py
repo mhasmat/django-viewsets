@@ -3,11 +3,12 @@ from rest_framework.routers import DefaultRouter
 
 # Tal cual hacíamos con APIView, importamos los
 # Viewsets necesarios, ya que no deja de ser una View.
-from .viewsets import (
+from e_commerce.api.viewsets import (
     CustomUserViewSet,
     UserViewSet,
     FilteringUserViewSet,
-    FilteringBackendUserViewSet
+    FilteringBackendUserViewSet,
+    WishListViewSet
 )
 
 # Con esto indicamos que el router se haga cargo de nuestras
@@ -20,6 +21,7 @@ router = DefaultRouter()
 # NOTE: Recordar que cuando enlazamos un archivo de rutas, Django
 # siempre va intentar buscar en el archivo es que exista la lista
 # 'urlpatterns'.
+
 router.register(
     prefix=r'modelviewset/users',
     viewset=UserViewSet,
@@ -40,4 +42,15 @@ router.register(
     FilteringUserViewSet,
     basename='genericviewset/users'
 )
+# router.register(
+#     r'modelviewset/wishlist',
+#     viewset=WishListViewSet,
+#     basename='modelviewset/wishlist'
+# )
+router.register(
+    r'wishlist',
+    WishListViewSet,
+    'wishlist'
+)
+
 urlpatterns = router.urls

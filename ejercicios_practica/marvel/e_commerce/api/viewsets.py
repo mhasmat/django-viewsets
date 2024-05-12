@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import action
+from rest_framework.viewsets import ModelViewSet
 
 # Librería para manejar filtrado:
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,9 +18,8 @@ from rest_framework.pagination import (
     PageNumberPagination
 )
 
-from e_commerce.models import User
-from .serializers import UserSerializer, UpdatePasswordUserSerializer
-
+from e_commerce.models import User, WishList
+from e_commerce.api.serializers import UserSerializer,  WishListSerializer, UpdatePasswordUserSerializer
 
 # Genero una clase para configurar el paginado de la API.
 class ShortResultsSetPagination(PageNumberPagination):
@@ -236,3 +236,17 @@ class FilteringUserViewSet(viewsets.GenericViewSet):
             queryset = queryset.filter(is_staff=eval(_is_staff))
 
         return queryset
+
+# ...
+class WishListViewSet(viewsets.ModelViewSet):
+    queryset = WishList.objects.all().order_by('user__username')
+    serializer_class = WishListSerializer
+    permission_classes = (IsAuthenticated,)
+    
+    def get_queryset(self):
+        _username = self.request.query_params.get('username')
+        queryset = self.queryset
+        if _username:
+            queryset = queryset.filter(user__username=_username)
+        return queryset
+
